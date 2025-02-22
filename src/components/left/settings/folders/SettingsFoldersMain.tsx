@@ -5,6 +5,7 @@ import React, {
 import { getActions, withGlobal } from '../../../../global';
 
 import type { ApiChatFolder } from '../../../../api/types';
+import type { ISettings } from '../../../../types';
 
 import { ALL_FOLDER_ID, STICKER_SIZE_FOLDER_SETTINGS } from '../../../../config';
 import { getFolderDescriptionText } from '../../../../global/helpers';
@@ -27,6 +28,8 @@ import Button from '../../../ui/Button';
 import Draggable from '../../../ui/Draggable';
 import ListItem from '../../../ui/ListItem';
 import Loading from '../../../ui/Loading';
+import RadioGroup, { type IRadioOption } from '../../../ui/RadioGroup';
+import FolderIcon, { FolderIcons, iconForFolder } from '../../FolderIcon';
 
 type OwnProps = {
   isActive?: boolean;
@@ -41,6 +44,7 @@ type StateProps = {
   recommendedChatFolders?: ApiChatFolder[];
   maxFolders: number;
   isPremium?: boolean;
+  foldersLayout: ISettings['foldersLayout'];
 };
 
 type SortState = {
@@ -51,6 +55,13 @@ type SortState = {
 
 const FOLDER_HEIGHT_PX = 68;
 const runThrottledForLoadRecommended = throttle((cb) => cb(), 60000, true);
+const foldersLayoutOptions: IRadioOption[] = [{
+  label: 'Left',
+  value: 'left',
+}, {
+  label: 'Top',
+  value: 'top',
+}];
 
 const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
   isActive,
@@ -62,6 +73,7 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
   isPremium,
   recommendedChatFolders,
   maxFolders,
+  foldersLayout,
 }) => {
   const {
     loadRecommendedChatFolders,
@@ -69,6 +81,7 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
     openLimitReachedModal,
     openDeleteChatFolderModal,
     sortChatFolders,
+    setSettingOption,
   } = getActions();
 
   const [state, setState] = useState<SortState>({
@@ -146,6 +159,7 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
         subtitle: getFolderDescriptionText(lang, folder, chatsCountByFolderId[folder.id]),
         isChatList: folder.isChatList,
         noTitleAnimations: folder.noTitleAnimations,
+        folder,
       };
     });
   }, [folderIds, foldersById, lang, chatsCountByFolderId]);
@@ -161,6 +175,10 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
 
     addChatFolder({ folder });
   }, [foldersById, maxFolders, addChatFolder, openLimitReachedModal]);
+
+  const handleFoldersLayoutChange = useCallback((value: string) => {
+    setSettingOption({ foldersLayout: value as ISettings['foldersLayout'] });
+  }, []);
 
   const handleDrag = useCallback((translation: { x: number; y: number }, id: string | number) => {
     const delta = Math.round(translation.y / FOLDER_HEIGHT_PX);
@@ -252,6 +270,12 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
                     narrow
                     inactive
                     multiline
+                    leftElement={(
+                      <FolderIcon
+                        className="settings-folders-folder-listitem-icon"
+                        icon={FolderIcons.ExistingChats}
+                      />
+                    )}
                     isStatic
                     allowSelection
                   >
@@ -283,6 +307,12 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
                   narrow
                   secondaryIcon="more"
                   multiline
+                  leftElement={(
+                    <FolderIcon
+                      className="settings-folders-folder-listitem-icon"
+                      icon={iconForFolder(folder.folder!)}
+                    />
+                  )}
                   contextActions={[
                     {
                       handler: () => {
@@ -367,6 +397,21 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
           ))}
         </div>
       )}
+
+      <div className="settings-item pt-3">
+        <h4 className="settings-item-header mb-3" dir={lang.isRtl ? 'rtl' : undefined}>
+          {lang('Chat Folders Layout')}
+        </h4>
+        <p className="settings-item-description-larger">
+          On small screens chat folders will always be displayed on the top.
+        </p>
+        <RadioGroup
+          name="theme"
+          options={foldersLayoutOptions}
+          selected={foldersLayout}
+          onChange={handleFoldersLayoutChange}
+        />
+      </div>
     </div>
   );
 };
@@ -385,6 +430,7 @@ export default memo(withGlobal<OwnProps>(
       isPremium: selectIsCurrentUserPremium(global),
       recommendedChatFolders,
       maxFolders: selectCurrentLimit(global, 'dialogFilters'),
+      foldersLayout: global.settings.byKey.foldersLayout,
     };
   },
 )(SettingsFoldersMain));

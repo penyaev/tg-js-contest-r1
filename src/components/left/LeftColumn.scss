@@ -22,8 +22,10 @@
     white-space: nowrap;
   }
 
-  .SearchInput {
+  .main-menu + .SearchInput {
     margin-left: 0.625rem;
+  }
+  .SearchInput {
     max-width: calc(100% - 3.25rem);
 
     @media (max-width: 600px) {

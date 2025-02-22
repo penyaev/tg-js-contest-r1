@@ -355,6 +355,13 @@ addActionHandler('sendMessage', (global, actions, payload): ActionReturnType => 
     actions.clearWebPagePreview({ tabId });
   }
 
+  global = getGlobal();
+  global = {
+    ...global,
+    backgroundAnimationTrigger: Math.random(),
+  };
+  setGlobal(global);
+
   const isSingle = !payload.attachments || payload.attachments.length <= 1;
   const isGrouped = !isSingle && payload.shouldGroupMessages;
 

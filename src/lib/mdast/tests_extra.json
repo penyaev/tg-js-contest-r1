@@ -1,0 +1,27 @@
+[
+  {
+    "markdown": "\n      \n    foo\n    \n\n",
+    "html": "<pre><code>foo\n</code></pre>\n",
+    "example": 1001
+  },
+  {
+    "markdown": "[text **`bold inline code`**](https://google.com)",
+    "html": "<p><a href=\"https://google.com\">text <b><code>bold inline code</code></b></a></p>\n",
+    "example": 1002
+  },
+  {
+    "markdown": "[not a link] (https://google.com)",
+    "html": "<p>[not a link] (https://google.com)</p>\n",
+    "example": 1003
+  },
+  {
+    "markdown": "[link](<https://google.com>)",
+    "html": "<p><a href=\"https://google.com\">link</a></p>\n",
+    "example": 1004
+  },
+  {
+    "markdown": "[link](<https://google.com> <https://google2.com>)",
+    "html": "<p>[link](<a href=\"https://google.com\">https://google.com</a> <a href=\"https://google2.com\">https://google2.com</a>)</p>\n",
+    "example": 1005
+  }
+]

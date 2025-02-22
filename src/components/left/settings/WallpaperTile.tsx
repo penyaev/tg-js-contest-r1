@@ -1,3 +1,4 @@
+import { inflate } from 'pako';
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   memo, useCallback, useEffect, useRef,
@@ -11,6 +12,7 @@ import { UPLOADING_WALLPAPER_SLUG } from '../../../types';
 import { CUSTOM_BG_CACHE_NAME } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
 import * as cacheApi from '../../../util/cacheApi';
+import { numberToHexColor } from '../../../util/colors';
 import { fetchBlob } from '../../../util/files';
 
 import useCanvasBlur from '../../../hooks/useCanvasBlur';
@@ -19,6 +21,7 @@ import useMediaWithLoadProgress from '../../../hooks/useMediaWithLoadProgress';
 import usePreviousDeprecated from '../../../hooks/usePreviousDeprecated';
 import useShowTransitionDeprecated from '../../../hooks/useShowTransitionDeprecated';
 
+import AnimatedBackground from '../../middle/AnimatedBackground';
 import ProgressSpinner from '../../ui/ProgressSpinner';
 
 import './WallpaperTile.scss';
@@ -65,7 +68,12 @@ const WallpaperTile: FC<OwnProps> = ({
 
   const handleSelect = useCallback(() => {
     (async () => {
-      const blob = await fetchBlob(fullMedia!);
+      let blob = await fetchBlob(fullMedia!);
+      if (blob.type === 'application/x-tgwallpattern') {
+        const buffer = await blob.arrayBuffer();
+        const inflated = inflate(buffer);
+        blob = new Blob([inflated], { type: 'image/svg+xml' });
+      }
       await cacheApi.save(CUSTOM_BG_CACHE_NAME, cacheKeyRef.current!, blob);
       onClick(slug);
     })();
@@ -93,16 +101,30 @@ const WallpaperTile: FC<OwnProps> = ({
     isSelected && 'selected',
   );
 
+  const backgroundColors = [
+    wallpaper.settings?.backgroundColor,
+    wallpaper.settings?.secondBackgroundColor,
+    wallpaper.settings?.thirdBackgroundColor,
+    wallpaper.settings?.fourthBackgroundColor,
+  ].filter(Boolean).map(numberToHexColor);
+
+  const animatedBackground = wallpaper.pattern && backgroundColors.length >= 3;
   return (
     <div className={className} onClick={handleClick}>
       <div className="media-inner">
+        {animatedBackground && (
+          <AnimatedBackground
+            colors={backgroundColors}
+            trigger={0}
+          />
+        )}
         <canvas
           ref={thumbRef}
           className="thumbnail"
         />
         <img
           src={previewBlobUrl || localBlobUrl}
-          className={buildClassName('full-media', transitionClassNames)}
+          className={buildClassName('full-media', transitionClassNames, animatedBackground && 'animatedBackground')}
           alt=""
           draggable={false}
         />

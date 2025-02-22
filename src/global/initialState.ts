@@ -282,11 +282,20 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
       canDisplayChatInTitle: true,
       shouldAllowHttpTransport: true,
       shouldWarnAboutSvg: true,
+      foldersLayout: 'left',
     },
     themes: {
       light: {
         isBlurred: true,
         patternColor: DEFAULT_PATTERN_COLOR,
+        backgroundAnimation: true,
+        pattern: false,
+        backgroundColors: [
+          '#dbddbb',
+          '#6ba587',
+          '#d5d88d',
+          '#88b884',
+        ],
       },
       dark: {
         isBlurred: true,

@@ -31,18 +31,22 @@ export type OwnProps = {
   selectedRange?: Range;
   setSelectedRange: (range: Range) => void;
   onClose: () => void;
+  onUpdate: Function;
 };
 
 interface ISelectedTextFormats {
+  link?: boolean;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   strikethrough?: boolean;
   monospace?: boolean;
   spoiler?: boolean;
+  quote?: boolean;
 }
 
 const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
+  A: 'link',
   B: 'bold',
   STRONG: 'bold',
   I: 'italic',
@@ -51,6 +55,7 @@ const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
   DEL: 'strikethrough',
   CODE: 'monospace',
   SPAN: 'spoiler',
+  BLOCKQUOTE: 'quote',
 };
 const fragmentEl = document.createElement('div');
 
@@ -60,6 +65,7 @@ const TextFormatter: FC<OwnProps> = ({
   selectedRange,
   setSelectedRange,
   onClose,
+  onUpdate,
 }) => {
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,12 +86,76 @@ const TextFormatter: FC<OwnProps> = ({
     true,
   );
 
+  const getSelectedElement = useLastCallback((preferredTagName: string = '') => {
+    if (!selectedRange) {
+      return undefined;
+    }
+
+    /**
+     * Code below handles a special case of selecting a range that includes
+     * multiple adjacent text nodes, e.g.:
+     *
+     * This looks as a normal bold "123456" however it consists of two distinct text nodes:
+     * <b>
+     *   "123"
+     *   "456"
+     * </b>
+     *
+     * User might select "123", in which case its `commonAncestorContainer` will be the text node itself, but
+     * they can also select "234" which will span two text nodes and in this case `commonAncestorContainer` will be <b>
+     */
+
+    /**
+     * Code below also handles the case when we're looking for a specific tag that could be
+     * not an immediate parent of the currently selected element, e.g.:
+     *
+     * <blockquote>
+     *   <b>123</b>
+     * </blockquote>
+     *
+     * When user selects "123", in different situations we might need either <b> or <blockquote>
+     */
+    let container: Node | null = selectedRange.commonAncestorContainer;
+    while (container) {
+      if (container.nodeType === Node.ELEMENT_NODE) {
+        if (preferredTagName === '') {
+          break;
+        }
+        if ((container as HTMLElement).tagName === preferredTagName) {
+          break;
+        }
+      }
+
+      container = container.parentElement;
+    }
+
+    return container as HTMLElement | null;
+  });
+
+  const restoreSelection = useLastCallback(() => {
+    if (!selectedRange) {
+      return;
+    }
+
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(selectedRange);
+    }
+  });
+
   useEffect(() => {
     if (isLinkControlOpen) {
+      const link = getSelectedElement('A');
+      if (link) {
+        setLinkUrl((link as HTMLAnchorElement).href);
+        setIsEditingLink(true);
+      }
       linkUrlInputRef.current!.focus();
     } else {
       setLinkUrl('');
       setIsEditingLink(false);
+      restoreSelection();
     }
   }, [isLinkControlOpen]);
 
@@ -103,7 +173,7 @@ const TextFormatter: FC<OwnProps> = ({
     }
 
     const selectedFormats: ISelectedTextFormats = {};
-    let { parentElement } = selectedRange.commonAncestorContainer;
+    let parentElement = getSelectedElement();
     while (parentElement && parentElement.id !== EDITABLE_INPUT_ID) {
       const textFormat = TEXT_FORMAT_BY_TAG_NAME[parentElement.tagName];
       if (textFormat) {
@@ -115,18 +185,6 @@ const TextFormatter: FC<OwnProps> = ({
 
     setSelectedTextFormats(selectedFormats);
   }, [isOpen, selectedRange, openLinkControl]);
-
-  const restoreSelection = useLastCallback(() => {
-    if (!selectedRange) {
-      return;
-    }
-
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(selectedRange);
-    }
-  });
 
   const updateSelectedRange = useLastCallback(() => {
     const selection = window.getSelection();
@@ -146,14 +204,6 @@ const TextFormatter: FC<OwnProps> = ({
       });
     }
     return fragmentEl.innerHTML;
-  });
-
-  const getSelectedElement = useLastCallback(() => {
-    if (!selectedRange) {
-      return undefined;
-    }
-
-    return selectedRange.commonAncestorContainer.parentElement;
   });
 
   function updateInputStyles() {
@@ -220,12 +270,46 @@ const TextFormatter: FC<OwnProps> = ({
         spoiler: false,
       }));
 
+      onUpdate();
+
       return;
     }
 
     const text = getSelectedText();
     document.execCommand(
       'insertHTML', false, `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`,
+    );
+    onClose();
+  });
+
+  const handleQuote = useLastCallback(() => {
+    if (selectedTextFormats.quote) {
+      const element = getSelectedElement('BLOCKQUOTE');
+      if (
+        !selectedRange
+        || !element
+        || element.tagName !== 'BLOCKQUOTE'
+        || !element.textContent
+      ) {
+        return;
+      }
+
+      // Replacing w/ childNodes rather than textContent because
+      // we would like to preserve existing formatting inside the blockquote
+      element.replaceWith(...element.childNodes);
+      setSelectedTextFormats((selectedFormats) => ({
+        ...selectedFormats,
+        quote: false,
+      }));
+
+      onUpdate();
+
+      return;
+    }
+
+    const text = getSelectedText();
+    document.execCommand(
+      'insertHTML', false, `<blockquote>${text}</blockquote>`,
     );
     onClose();
   });
@@ -284,6 +368,8 @@ const TextFormatter: FC<OwnProps> = ({
         strikethrough: false,
       }));
 
+      onUpdate();
+
       return;
     }
 
@@ -310,6 +396,8 @@ const TextFormatter: FC<OwnProps> = ({
         monospace: false,
       }));
 
+      onUpdate();
+
       return;
     }
 
@@ -318,16 +406,45 @@ const TextFormatter: FC<OwnProps> = ({
     onClose();
   });
 
+  const handleLinkUrlRemove = useLastCallback(() => {
+    if (!isEditingLink) {
+      return;
+    }
+
+    const element = getSelectedElement('A');
+    if (!element || element.tagName !== 'A') {
+      return;
+    }
+
+    // replacing with childNodes to preserve nested formatting
+    // e.g. link can have nested bolt/italic text
+    element.replaceWith(...element.childNodes);
+    setSelectedTextFormats((selectedFormats) => ({
+      ...selectedFormats,
+      link: false,
+    }));
+
+    onUpdate();
+
+    onClose();
+  });
+
   const handleLinkUrlConfirm = useLastCallback(() => {
     const formattedLinkUrl = (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%');
+    if (!formattedLinkUrl) {
+      handleLinkUrlRemove();
+      return;
+    }
 
     if (isEditingLink) {
-      const element = getSelectedElement();
+      const element = getSelectedElement('A');
       if (!element || element.tagName !== 'A') {
         return;
       }
 
       (element as HTMLAnchorElement).href = formattedLinkUrl;
+
+      onUpdate();
 
       onClose();
 
@@ -335,6 +452,7 @@ const TextFormatter: FC<OwnProps> = ({
     }
 
     const text = getSelectedText(true);
+    // restore selection to replace selected text with a link
     restoreSelection();
     document.execCommand(
       'insertHTML',
@@ -342,6 +460,9 @@ const TextFormatter: FC<OwnProps> = ({
       `<a href=${formattedLinkUrl} class="text-entity-link" dir="auto">${text}</a>`,
     );
     onClose();
+
+    // restore selection to restore UI state
+    restoreSelection();
   });
 
   const handleKeyDown = useLastCallback((e: KeyboardEvent) => {
@@ -353,6 +474,7 @@ const TextFormatter: FC<OwnProps> = ({
       m: handleMonospaceText,
       s: handleStrikethroughText,
       p: handleSpoilerText,
+      q: handleQuote,
     };
 
     const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)];
@@ -413,7 +535,7 @@ const TextFormatter: FC<OwnProps> = ({
       style={style}
       onKeyDown={handleContainerKeyDown}
       // Prevents focus loss when clicking on the toolbar
-      onMouseDown={stopEvent}
+      onMouseDown={isLinkControlOpen ? undefined : stopEvent}
     >
       <div className="TextFormatter-buttons">
         <Button
@@ -465,8 +587,21 @@ const TextFormatter: FC<OwnProps> = ({
         >
           <Icon name="monospace" />
         </Button>
+        <Button
+          color="translucent"
+          ariaLabel="Quote"
+          className={getFormatButtonClassName('quote')}
+          onClick={handleQuote}
+        >
+          <Icon name="quote-text" />
+        </Button>
         <div className="TextFormatter-divider" />
-        <Button color="translucent" ariaLabel={lang('TextFormat.AddLinkTitle')} onClick={openLinkControl}>
+        <Button
+          color="translucent"
+          ariaLabel={lang('TextFormat.AddLinkTitle')}
+          className={getFormatButtonClassName('link')}
+          onClick={openLinkControl}
+        >
           <Icon name="link" />
         </Button>
       </div>
@@ -495,7 +630,9 @@ const TextFormatter: FC<OwnProps> = ({
             />
           </div>
 
-          <div className={linkUrlConfirmClassName}>
+          <div
+            className={buildClassName('TextFormatter-link-url-confirm', (!!linkUrl.length || isEditingLink) && 'shown')}
+          >
             <div className="TextFormatter-divider" />
             <Button
               color="translucent"
@@ -505,6 +642,15 @@ const TextFormatter: FC<OwnProps> = ({
             >
               <Icon name="check" />
             </Button>
+            {isEditingLink && (
+              <Button
+                color="translucent"
+                ariaLabel={lang('Delete')}
+                onClick={handleLinkUrlRemove}
+              >
+                <Icon name="delete" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

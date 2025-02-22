@@ -20,7 +20,13 @@
     background-size: cover;
   }
 
-  :global(html.theme-light) &:not(.customBgImage)::before {
+  &.pattern::before {
+    transition: none;
+    background-repeat: repeat;
+    background-size: 420px;
+  }
+
+  :global(html.theme-light) &:not(.customBgImage, .animatedBackground)::before {
     background-image: url('../../assets/chat-bg-br.png');
   }
 
@@ -31,6 +37,10 @@
   &.customBgImage::before {
     background-image: var(--custom-background) !important;
     transform: scale(1.1);
+  }
+  &.customBgImage.animatedBackground::before {
+    opacity: 0.2;
+    mix-blend-mode: multiply;
   }
 
   :global(body:not(.no-page-transitions)) &.withTransition {
@@ -87,7 +97,8 @@
     background-position: top right;
     background-size: 510px auto;
     background-repeat: repeat;
-    mix-blend-mode: overlay;
+    mix-blend-mode: multiply;
+    opacity: 0.4;
 
     :global(html.theme-dark) & {
       background-image: url('../../assets/chat-bg-pattern-dark.png');

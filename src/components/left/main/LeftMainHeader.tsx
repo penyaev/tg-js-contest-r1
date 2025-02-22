@@ -11,7 +11,7 @@ import { LeftColumnContent, SettingsScreens } from '../../../types';
 import {
   APP_NAME,
   DEBUG,
-  IS_BETA,
+  IS_BETA, MIN_SCREEN_WIDTH_FOR_STATIC_LEFT_COLUMN,
 } from '../../../config';
 import {
   selectCanSetPasscode,
@@ -34,6 +34,7 @@ import useLang from '../../../hooks/useLang';
 import useLastCallback from '../../../hooks/useLastCallback';
 import useOldLang from '../../../hooks/useOldLang';
 import { useFullscreenStatus } from '../../../hooks/window/useFullscreen';
+import useWindowSize from '../../../hooks/window/useWindowSize';
 import useLeftHeaderButtonRtlForumTransition from './hooks/useLeftHeaderButtonRtlForumTransition';
 
 import Icon from '../../common/icons/Icon';
@@ -41,6 +42,7 @@ import PeerChip from '../../common/PeerChip';
 import StoryToggler from '../../story/StoryToggler';
 import Button from '../../ui/Button';
 import DropdownMenu from '../../ui/DropdownMenu';
+import Portal from '../../ui/Portal';
 import SearchInput from '../../ui/SearchInput';
 import ShowTransition from '../../ui/ShowTransition';
 import ConnectionStatusOverlay from '../ConnectionStatusOverlay';
@@ -75,6 +77,7 @@ type StateProps =
     areChatsLoaded?: boolean;
     hasPasscode?: boolean;
     canSetPasscode?: boolean;
+    foldersLayout: ISettings['foldersLayout'];
   }
   & Pick<GlobalState, 'connectionState' | 'isSyncing' | 'isFetchingDifference'>;
 
@@ -106,6 +109,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   onSelectContacts,
   onSelectArchived,
   onReset,
+  foldersLayout,
 }) => {
   const {
     setGlobalSearchDate,
@@ -169,7 +173,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
         ariaLabel={hasMenu ? oldLang('AccDescrOpenMenu2') : 'Return to chat list'}
       >
         <div className={buildClassName(
-          'animated-menu-icon',
+          'MainMenuIcon',
           !hasMenu && 'state-back',
           shouldSkipTransition && 'no-animation',
         )}
@@ -250,32 +254,65 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
     );
   }, [globalSearchChatId, selectedSearchDate]);
 
+  const { width: windowWidth } = useWindowSize();
+
+  const dropdownMenu = useMemo(() => {
+    let menu = (
+      <DropdownMenu
+        trigger={MainButton}
+        footer={`${APP_NAME} ${versionString}`}
+        className={buildClassName(
+          'main-menu',
+          oldLang.isRtl && 'rtl',
+          shouldHideSearch && oldLang.isRtl && 'right-aligned',
+          shouldDisableDropdownMenuTransitionRef.current && oldLang.isRtl && 'disable-transition',
+        )}
+        forceOpen={isBotMenuOpen}
+        positionX={shouldHideSearch && oldLang.isRtl ? 'right' : 'left'}
+        transformOriginX={IS_ELECTRON && IS_MAC_OS && !isFullscreen ? 90 : undefined}
+        onTransitionEnd={oldLang.isRtl ? handleDropdownMenuTransitionEnd : undefined}
+      >
+        <LeftSideMenuItems
+          onSelectArchived={onSelectArchived}
+          onSelectContacts={onSelectContacts}
+          onSelectSettings={onSelectSettings}
+          onBotMenuOpened={markBotMenuOpen}
+          onBotMenuClosed={unmarkBotMenuOpen}
+        />
+      </DropdownMenu>
+    );
+
+    const foldersLeftAllowed = windowWidth > MIN_SCREEN_WIDTH_FOR_STATIC_LEFT_COLUMN;
+    if (foldersLayout === 'left' && foldersLeftAllowed) {
+      menu = (
+        <Portal className="ChatFoldersSidebar-menu-container" containerSelector="#ChatFoldersSidebar-menu-wrapper">
+          {menu}
+        </Portal>
+      );
+    }
+
+    return menu;
+  }, [
+    MainButton,
+    foldersLayout,
+    handleDropdownMenuTransitionEnd,
+    isBotMenuOpen,
+    isFullscreen,
+    oldLang.isRtl,
+    onSelectArchived,
+    onSelectContacts,
+    onSelectSettings,
+    shouldDisableDropdownMenuTransitionRef,
+    shouldHideSearch,
+    versionString,
+    windowWidth,
+  ]);
+
   return (
     <div className="LeftMainHeader">
       <div id="LeftMainHeader" className="left-header" ref={headerRef}>
         {oldLang.isRtl && <div className="DropdownMenuFiller" />}
-        <DropdownMenu
-          trigger={MainButton}
-          footer={`${APP_NAME} ${versionString}`}
-          className={buildClassName(
-            'main-menu',
-            oldLang.isRtl && 'rtl',
-            shouldHideSearch && oldLang.isRtl && 'right-aligned',
-            shouldDisableDropdownMenuTransitionRef.current && oldLang.isRtl && 'disable-transition',
-          )}
-          forceOpen={isBotMenuOpen}
-          positionX={shouldHideSearch && oldLang.isRtl ? 'right' : 'left'}
-          transformOriginX={IS_ELECTRON && IS_MAC_OS && !isFullscreen ? 90 : undefined}
-          onTransitionEnd={oldLang.isRtl ? handleDropdownMenuTransitionEnd : undefined}
-        >
-          <LeftSideMenuItems
-            onSelectArchived={onSelectArchived}
-            onSelectContacts={onSelectContacts}
-            onSelectSettings={onSelectSettings}
-            onBotMenuOpened={markBotMenuOpen}
-            onBotMenuClosed={unmarkBotMenuOpen}
-          />
-        </DropdownMenu>
+        {dropdownMenu}
         <SearchInput
           inputId="telegram-search-input"
           resultsItemSelector=".LeftSearch .ListItem-button"
@@ -340,7 +377,7 @@ export default memo(withGlobal<OwnProps>(
     const {
       connectionState, isSyncing, isFetchingDifference,
     } = global;
-    const { isConnectionStatusMinimized } = global.settings.byKey;
+    const { isConnectionStatusMinimized, foldersLayout } = global.settings.byKey;
 
     return {
       searchQuery,
@@ -357,6 +394,7 @@ export default memo(withGlobal<OwnProps>(
       areChatsLoaded: Boolean(global.chats.listIds.active),
       hasPasscode: Boolean(global.passcode.hasPasscode),
       canSetPasscode: selectCanSetPasscode(global),
+      foldersLayout,
     };
   },
 )(LeftMainHeader));

@@ -1,0 +1,42 @@
+.FolderIcon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+
+  &--layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    &__bg {
+      background-color: transparent;
+
+
+      > img {
+        filter: invert(1);
+        mix-blend-mode: multiply;
+      }
+    }
+
+    &__fg {
+      mix-blend-mode: screen;
+      background-color: var(--color-sidebar-foreground);
+      transition: background-color 0.1s ease;
+
+      &_active {
+        background-color: var(--color-sidebar-foreground-active);
+      }
+
+      > img {
+        mix-blend-mode: multiply;
+      }
+    }
+  }
+
+  &--image {
+    width: 100%;
+    height: 100%;
+  }
+}

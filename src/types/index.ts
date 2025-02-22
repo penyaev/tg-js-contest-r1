@@ -74,6 +74,9 @@ export interface IThemeSettings {
   backgroundColor?: string;
   patternColor?: string;
   isBlurred?: boolean;
+  backgroundAnimation?: boolean;
+  pattern?: boolean;
+  backgroundColors?: string[];
 }
 
 export type NotifySettings = {
@@ -139,6 +142,7 @@ export interface ISettings extends NotifySettings, Record<string, any> {
   shouldDebugExportedSenders?: boolean;
   shouldWarnAboutSvg?: boolean;
   shouldSkipWebAppCloseConfirmation: boolean;
+  foldersLayout: 'left' | 'top';
 }
 
 export type IAnchorPosition = {

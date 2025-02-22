@@ -1,9 +1,7 @@
 import '../../global/actions/all';
 
 import React, {
-  beginHeavyAnimation,
-  memo, useEffect, useLayoutEffect,
-  useRef, useState,
+  beginHeavyAnimation, memo, useEffect, useLayoutEffect, useRef, useState,
 } from '../../lib/teact/teact';
 import { addExtraClass } from '../../lib/teact/teact-dom';
 import { getActions, getGlobal, withGlobal } from '../../global';

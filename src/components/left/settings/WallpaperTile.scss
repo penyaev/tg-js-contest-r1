@@ -27,6 +27,10 @@
       height: 100%;
       object-fit: cover;
     }
+    img.animatedBackground {
+      opacity: 0.3;
+      mix-blend-mode: multiply;
+    }
   }
 
   &::after {

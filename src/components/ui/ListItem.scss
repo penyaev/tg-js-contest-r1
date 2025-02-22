@@ -1,5 +1,6 @@
 .ListItem {
   position: relative;
+  --background-color: var(--color-background);
 
   body.is-ios &,
   body.is-android & {

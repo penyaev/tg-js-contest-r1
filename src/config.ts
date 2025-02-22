@@ -437,6 +437,8 @@ export const PREMIUM_LIMITS_ORDER: ApiLimitTypeForPromo[] = [
   'recommendedChannels',
 ];
 
+export const ENABLE_MDAST = true; // Enable better markdown parser
+
 export const DEFAULT_GIFT_PROFILE_FILTER_OPTIONS : GiftProfileFilterOptions = {
   sortType: 'byDate',
   shouldIncludeUnlimited: true,
