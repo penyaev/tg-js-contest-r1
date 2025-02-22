@@ -201,6 +201,7 @@ const LeftMain: FC<OwnProps> = ({
                   onLeftColumnContentChange={onContentChange}
                   foldersDispatch={foldersDispatch}
                   isForumPanelOpen={isForumPanelVisible}
+                  onReset={onReset}
                 />
               );
             case LeftColumnContent.GlobalSearch:

@@ -81,6 +81,25 @@
   }
 }
 
+.settings-folders-folder-title-input-container {
+  position: relative;
+}
+
+.settings-folders-folder-listitem-icon {
+  margin-left: -4px;
+  margin-right: 8px;
+}
+
+.settings-folders-folder-icon-selector-button {
+  position: absolute;
+  top: calc(50% - 2.75rem / 2); // 2.75rem is size of button.smaller
+
+  // cannot use this because it breaks the mix-blend-mode of FolderIcons
+  //transform: translateY(-50%);
+
+  right: 0.4rem;
+}
+
 .settings-item .ShowMoreButton {
   margin: 0 -1rem;
   width: calc(100% + 2rem);

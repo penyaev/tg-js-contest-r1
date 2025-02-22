@@ -94,6 +94,7 @@ export type GlobalState = {
   lastIsChatInfoShown?: boolean;
   initialUnreadNotifications?: number;
   shouldShowContextMenuHint?: boolean;
+  backgroundAnimationTrigger?: number;
 
   audioPlayer: {
     lastPlaybackRate: number;

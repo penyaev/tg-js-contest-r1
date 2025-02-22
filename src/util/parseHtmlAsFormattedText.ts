@@ -1,7 +1,9 @@
 import type { ApiFormattedText, ApiMessageEntity } from '../api/types';
 import { ApiMessageEntityTypes } from '../api/types';
 
-import { RE_LINK_TEMPLATE } from '../config';
+import { ENABLE_MDAST, RE_LINK_TEMPLATE } from '../config';
+import { ParseAST } from '../lib/mdast';
+import { TelegramRenderer } from '../lib/mdast/render';
 import { IS_EMOJI_SUPPORTED } from './windowEnvironment';
 
 export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = {
@@ -26,7 +28,9 @@ export default function parseHtmlAsFormattedText(
 ): ApiFormattedText {
   const fragment = document.createElement('div');
   fragment.innerHTML = skipMarkdown ? html
-    : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
+    : ENABLE_MDAST ? parseMarkdownAST(html, withMarkdownLinks)
+      : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
+
   fixImageContent(fragment);
   const text = fragment.innerText.trim().replace(/\u200b+/g, '');
   const trimShift = fragment.innerText.indexOf(text[0]);
@@ -138,6 +142,17 @@ function parseMarkdownLinks(html: string) {
   return html.replace(new RegExp(`\\[([^\\]]+?)]\\((${RE_LINK_TEMPLATE}+?)\\)`, 'g'), (_, text, link) => {
     const url = link.includes('://') ? link : link.includes('@') ? `mailto:${link}` : `https://${link}`;
     return `<a href="${url}">${text}</a>`;
+  });
+}
+
+function parseMarkdownAST(html: string, withMarkdownLinks: boolean): string {
+  return ParseAST(html, {
+    renderer: new TelegramRenderer(),
+    disableLinks: !withMarkdownLinks,
+    escapedGtLt: true,
+    spoilerSpanAttr: ` data-entity-type="${ApiMessageEntityTypes.Spoiler}"`,
+    convertBrToNewlines: true,
+    enableHeaders: false,
   });
 }
 

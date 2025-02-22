@@ -7,11 +7,11 @@ import { getActions, getGlobal, withGlobal } from '../../../global';
 import type { ApiChatFolder, ApiChatlistExportedInvite, ApiSession } from '../../../api/types';
 import type { GlobalState } from '../../../global/types';
 import type { FolderEditDispatch } from '../../../hooks/reducers/useFoldersReducer';
-import type { LeftColumnContent, SettingsScreens } from '../../../types';
+import type { ISettings, LeftColumnContent, SettingsScreens } from '../../../types';
 import type { MenuItemContextAction } from '../../ui/ListItem';
 import type { TabWithProperties } from '../../ui/TabList';
 
-import { ALL_FOLDER_ID } from '../../../config';
+import { ALL_FOLDER_ID, MIN_SCREEN_WIDTH_FOR_STATIC_LEFT_COLUMN } from '../../../config';
 import { selectCanShareFolder, selectTabState } from '../../../global/selectors';
 import { selectCurrentLimit } from '../../../global/selectors/limits';
 import buildClassName from '../../../util/buildClassName';
@@ -27,10 +27,13 @@ import useHistoryBack from '../../../hooks/useHistoryBack';
 import useLang from '../../../hooks/useLang';
 import useLastCallback from '../../../hooks/useLastCallback';
 import useShowTransition from '../../../hooks/useShowTransition';
+import useWindowSize from '../../../hooks/window/useWindowSize';
 
 import StoryRibbon from '../../story/StoryRibbon';
+import Portal from '../../ui/Portal';
 import TabList from '../../ui/TabList';
 import Transition from '../../ui/Transition';
+import ChatFoldersSidebar from '../ChatFoldersSidebar';
 import ChatList from './ChatList';
 
 type OwnProps = {
@@ -39,6 +42,7 @@ type OwnProps = {
   onLeftColumnContentChange: (content: LeftColumnContent) => void;
   shouldHideFolderTabs?: boolean;
   isForumPanelOpen?: boolean;
+  onReset: () => void;
 };
 
 type StateProps = {
@@ -56,6 +60,7 @@ type StateProps = {
   archiveSettings: GlobalState['archiveSettings'];
   isStoryRibbonShown?: boolean;
   sessions?: Record<string, ApiSession>;
+  foldersLayout: ISettings['foldersLayout'];
 };
 
 const SAVED_MESSAGES_HOTKEY = '0';
@@ -81,6 +86,8 @@ const ChatFolders: FC<OwnProps & StateProps> = ({
   archiveSettings,
   isStoryRibbonShown,
   sessions,
+  foldersLayout,
+  onReset,
 }) => {
   const {
     loadChatFolders,
@@ -216,6 +223,8 @@ const ChatFolders: FC<OwnProps & StateProps> = ({
 
   const handleSwitchTab = useLastCallback((index: number) => {
     setActiveChatFolder({ activeChatFolder: index }, { forceOnHeavyAnimation: true });
+    // @ts-ignore
+    onReset(true);
   });
 
   // Prevent `activeTab` pointing at non-existing folder after update
@@ -322,7 +331,14 @@ const ChatFolders: FC<OwnProps & StateProps> = ({
     );
   }
 
+  const { width: windowWidth } = useWindowSize();
+
   const shouldRenderFolders = folderTabs && folderTabs.length > 1;
+  const isLayoutLeft = foldersLayout === 'left';
+  const isLayoutTop = foldersLayout === 'top';
+  const foldersLeftAllowed = windowWidth > MIN_SCREEN_WIDTH_FOR_STATIC_LEFT_COLUMN;
+  const shouldRenderFoldersLeft = shouldRenderFolders && isLayoutLeft && displayedFolders && foldersLeftAllowed;
+  const shouldRenderFoldersTop = shouldRenderFolders && (isLayoutTop || !foldersLeftAllowed);
 
   return (
     <div
@@ -334,16 +350,28 @@ const ChatFolders: FC<OwnProps & StateProps> = ({
       )}
     >
       {shouldRenderStoryRibbon && <StoryRibbon isClosing={isStoryRibbonClosing} />}
-      {shouldRenderFolders ? (
+      {shouldRenderFoldersTop ? (
         <TabList
           contextRootElementSelector="#LeftColumn"
           tabs={folderTabs}
           activeTab={activeChatFolder}
           onSwitchTab={handleSwitchTab}
         />
-      ) : shouldRenderPlaceholder ? (
+      ) : (shouldRenderPlaceholder && isLayoutTop) ? (
         <div ref={placeholderRef} className="tabs-placeholder" />
       ) : undefined}
+      {shouldRenderFoldersLeft
+        ? (
+          <Portal className="ChatFoldersSidebar-container" containerSelector="#ChatFoldersSidebar-folders-wrapper">
+            <ChatFoldersSidebar
+              tabs={folderTabs}
+              folders={displayedFolders}
+              activeTab={activeChatFolder}
+              onSwitchFolder={handleSwitchTab}
+            />
+          </Portal>
+        )
+        : undefined}
       <Transition
         ref={transitionRef}
         name={shouldSkipHistoryAnimations ? 'none' : lang.isRtl ? 'slideOptimizedRtl' : 'slideOptimized'}
@@ -377,6 +405,11 @@ export default memo(withGlobal<OwnProps>(
       activeSessions: {
         byHash: sessions,
       },
+      settings: {
+        byKey: {
+          foldersLayout,
+        },
+      },
       currentUserId,
       archiveSettings,
     } = global;
@@ -398,6 +431,7 @@ export default memo(withGlobal<OwnProps>(
       archiveSettings,
       isStoryRibbonShown,
       sessions,
+      foldersLayout,
     };
   },
 )(ChatFolders));

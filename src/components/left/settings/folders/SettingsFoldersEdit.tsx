@@ -1,14 +1,13 @@
 import type { FC } from '../../../../lib/teact/teact';
 import React, {
-  memo, useCallback, useEffect, useMemo, useState,
+  memo, useCallback, useEffect, useMemo, useRef,
+  useState,
 } from '../../../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../../../global';
 
 import type { ApiChatlistExportedInvite } from '../../../../api/types';
-import type {
-  FolderEditDispatch,
-  FoldersState,
-} from '../../../../hooks/reducers/useFoldersReducer';
+import type { FolderEditDispatch, FoldersState } from '../../../../hooks/reducers/useFoldersReducer';
+import type { FolderIcons } from '../../FolderIcon';
 
 import { STICKER_SIZE_FOLDER_SETTINGS } from '../../../../config';
 import { isUserId } from '../../../../global/helpers';
@@ -20,6 +19,7 @@ import { CUSTOM_PEER_EXCLUDED_CHAT_TYPES, CUSTOM_PEER_INCLUDED_CHAT_TYPES } from
 import { LOCAL_TGS_URLS } from '../../../common/helpers/animatedAssets';
 
 import { selectChatFilters } from '../../../../hooks/reducers/useFoldersReducer';
+import useFlag from '../../../../hooks/useFlag';
 import useHistoryBack from '../../../../hooks/useHistoryBack';
 import useOldLang from '../../../../hooks/useOldLang';
 
@@ -27,10 +27,13 @@ import AnimatedIconWithPreview from '../../../common/AnimatedIconWithPreview';
 import GroupChatInfo from '../../../common/GroupChatInfo';
 import Icon from '../../../common/icons/Icon';
 import PrivateChatInfo from '../../../common/PrivateChatInfo';
+import Button from '../../../ui/Button';
 import FloatingActionButton from '../../../ui/FloatingActionButton';
 import InputText from '../../../ui/InputText';
 import ListItem from '../../../ui/ListItem';
 import Spinner from '../../../ui/Spinner';
+import FolderIcon, { emoticonForIcon, iconForFolder } from '../../FolderIcon';
+import FolderIconPicker from './FolderIconPicker';
 
 type OwnProps = {
   state: FoldersState;
@@ -94,6 +97,10 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
 
   const [isIncludedChatsListExpanded, setIsIncludedChatsListExpanded] = useState(false);
   const [isExcludedChatsListExpanded, setIsExcludedChatsListExpanded] = useState(false);
+
+  // eslint-disable-next-line no-null/no-null
+  const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const [isFolderIconPickerOpen, openFolderIconPicker, closeFolderIconPicker] = useFlag(false);
 
   useEffect(() => {
     if (isRemoved) {
@@ -279,6 +286,14 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
     );
   }
 
+  const handleFolderIconClick = useCallback(() => {
+    openFolderIconPicker();
+  }, [openFolderIconPicker]);
+
+  const handleFolderIconSelect = useCallback((icon: FolderIcons) => {
+    dispatch({ type: 'setEmoticon', payload: emoticonForIcon(icon) });
+  }, [dispatch]);
+
   return (
     <div className="settings-fab-wrapper">
       <div className="settings-content no-border custom-scroll">
@@ -297,12 +312,32 @@ const SettingsFoldersEdit: FC<OwnProps & StateProps> = ({
           )}
 
           <InputText
-            className="mb-0"
+            className="mb-0 settings-folders-folder-title-input-container"
             label={lang('FilterNameHint')}
             value={state.folder.title.text}
             onChange={handleChange}
             error={state.error && state.error === ERROR_NO_TITLE ? ERROR_NO_TITLE : undefined}
-          />
+          >
+            <Button
+              round
+              ref={pickerButtonRef}
+              size="smaller"
+              color="translucent"
+              className="settings-folders-folder-icon-selector-button"
+              onClick={handleFolderIconClick}
+            >
+              <FolderIcon
+                icon={iconForFolder(state.folder)}
+              />
+            </Button>
+            <FolderIconPicker
+              pickerButtonRef={pickerButtonRef}
+              isOpen={isFolderIconPickerOpen}
+              onFolderIconSelect={handleFolderIconSelect}
+              onClose={closeFolderIconPicker}
+              active={iconForFolder(state.folder)}
+            />
+          </InputText>
         </div>
 
         {!isOnlyInvites && (

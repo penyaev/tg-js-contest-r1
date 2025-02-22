@@ -10,7 +10,9 @@ import { SettingsScreens, UPLOADING_WALLPAPER_SLUG } from '../../../types';
 
 import { DARK_THEME_PATTERN_COLOR, DEFAULT_PATTERN_COLOR } from '../../../config';
 import { selectTheme } from '../../../global/selectors';
-import { getAverageColor, getPatternColor, rgb2hex } from '../../../util/colors';
+import {
+  getAverageColor, getPatternColor, numberToHexColor, rgb2hex,
+} from '../../../util/colors';
 import { validateFiles } from '../../../util/files';
 import { throttle } from '../../../util/schedulers';
 import { openSystemFilesDialog } from '../../../util/systemFilesDialog';
@@ -91,12 +93,28 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
       backgroundColor: undefined,
       isBlurred: true,
       patternColor: theme === 'dark' ? DARK_THEME_PATTERN_COLOR : DEFAULT_PATTERN_COLOR,
+      pattern: true,
+      backgroundColors: [
+        '#dbddbb',
+        '#6ba587',
+        '#d5d88d',
+        '#88b884',
+      ],
     });
   }, [setThemeSettings, theme]);
 
   const handleWallPaperSelect = useCallback((slug: string) => {
-    setThemeSettings({ theme: themeRef.current!, background: slug });
     const currentWallpaper = loadedWallpapers && loadedWallpapers.find((wallpaper) => wallpaper.slug === slug);
+    const backgroundColors = [
+      currentWallpaper?.settings?.backgroundColor,
+      currentWallpaper?.settings?.secondBackgroundColor,
+      currentWallpaper?.settings?.thirdBackgroundColor,
+      currentWallpaper?.settings?.fourthBackgroundColor,
+    ].filter(Boolean).map(numberToHexColor);
+
+    setThemeSettings({
+      theme: themeRef.current!, background: slug, pattern: currentWallpaper?.pattern || false, backgroundColors,
+    });
     if (currentWallpaper?.document.thumbnail) {
       getAverageColor(currentWallpaper.document.thumbnail.dataUri)
         .then((color) => {

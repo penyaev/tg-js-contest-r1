@@ -25,6 +25,8 @@ const useCustomBackground = (theme: ThemeKey, settingValue?: string) => {
           preloadImage(url)
             .then(() => {
               setValue(`url(${url})`);
+            })
+            .catch(() => {
             });
         })
         .catch(() => {

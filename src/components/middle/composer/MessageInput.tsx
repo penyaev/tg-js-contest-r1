@@ -1,9 +1,12 @@
-import type { ChangeEvent, RefObject } from 'react';
+import type { FormEvent, RefObject } from 'react';
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   getIsHeavyAnimating,
-  memo, useEffect, useLayoutEffect,
-  useRef, useState,
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
 } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
@@ -415,8 +418,8 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     }
   }
 
-  function handleChange(e: ChangeEvent<HTMLDivElement>) {
-    const { innerHTML, textContent } = e.currentTarget;
+  function handleChange(e?: FormEvent<HTMLDivElement>) {
+    const { innerHTML, textContent } = e?.currentTarget || inputRef.current!;
 
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
 
@@ -636,6 +639,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         selectedRange={selectedRange}
         setSelectedRange={setSelectedRange}
         onClose={handleCloseTextFormatter}
+        onUpdate={handleChange}
       />
       {forcedPlaceholder && <span className="forced-placeholder">{renderText(forcedPlaceholder!)}</span>}
     </div>

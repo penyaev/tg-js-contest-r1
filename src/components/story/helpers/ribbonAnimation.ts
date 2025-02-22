@@ -34,6 +34,10 @@ export function animateOpening(isArchived?: boolean) {
   const firstToggleAvatar = toggleAvatars[toggleAvatars.length - 1];
   const lastId = getPeerId(lastToggleAvatar);
 
+  const {
+    left: containerLeft, // this will normally be zero, unless left chat folders are enabled
+  } = container.getBoundingClientRect();
+
   Array.from(ribbonPeers).reverse().forEach((peer, index, { length }) => {
     const id = getPeerId(peer);
     if (!id) return;
@@ -57,7 +61,7 @@ export function animateOpening(isArchived?: boolean) {
       width: fromWidth,
     } = toggleAvatar.getBoundingClientRect();
 
-    const {
+    let {
       left: toLeft,
       width: toWidth,
     } = peer.getBoundingClientRect();
@@ -65,6 +69,9 @@ export function animateOpening(isArchived?: boolean) {
     if (toLeft > headerRight) {
       return;
     }
+
+    fromLeft -= containerLeft;
+    toLeft -= containerLeft;
 
     fromLeft -= STROKE_OFFSET;
     fromWidth += 2 * STROKE_OFFSET;
@@ -176,6 +183,10 @@ export function animateClosing(isArchived?: boolean) {
   const firstToggleAvatar = toggleAvatars[toggleAvatars.length - 1];
   const lastId = getPeerId(lastToggleAvatar);
 
+  const {
+    left: containerLeft,
+  } = container.getBoundingClientRect();
+
   Array.from(ribbonPeers).reverse().forEach((peer, index, { length }) => {
     const id = getPeerId(peer);
     if (!id) return;
@@ -192,7 +203,7 @@ export function animateClosing(isArchived?: boolean) {
 
     if (!toggleAvatar) return;
 
-    const {
+    let {
       top: fromTop,
       left: fromLeft,
       width: fromWidth,
@@ -207,6 +218,9 @@ export function animateClosing(isArchived?: boolean) {
     if (fromLeft > headerRight) {
       return;
     }
+
+    fromLeft -= containerLeft;
+    toLeft -= containerLeft;
 
     toLeft -= STROKE_OFFSET;
     toWidth += 2 * STROKE_OFFSET;

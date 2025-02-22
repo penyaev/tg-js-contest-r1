@@ -526,8 +526,10 @@ const Composer: FC<OwnProps & StateProps> = ({
     if (selection.rangeCount) {
       const selectionRange = selection.getRangeAt(0);
       if (isSelectionInsideInput(selectionRange, inInputId)) {
-        insertHtmlInSelection(newHtml);
-        messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // use insertHTML because it keeps the browser history stack,
+        // it's very well-supported by all modern browsers
+        // and there's no plans to phase it out any time soon
+        document.execCommand('insertHTML', false, newHtml);
         return;
       }
     }

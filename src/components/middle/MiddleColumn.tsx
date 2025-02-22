@@ -1,6 +1,5 @@
 import React, {
-  memo, useEffect, useMemo,
-  useState,
+  memo, useEffect, useMemo, useState,
 } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
@@ -8,10 +7,7 @@ import type {
   ApiChat, ApiChatBannedRights, ApiInputMessageReplyInfo, ApiTopic,
 } from '../../api/types';
 import type {
-  ActiveEmojiInteraction,
-  MessageListType,
-  ThemeKey,
-  ThreadId,
+  ActiveEmojiInteraction, MessageListType, ThemeKey, ThreadId,
 } from '../../types';
 import { MAIN_THREAD_ID } from '../../api/types';
 
@@ -62,7 +58,12 @@ import buildClassName from '../../util/buildClassName';
 import buildStyle from '../../util/buildStyle';
 import captureEscKeyListener from '../../util/captureEscKeyListener';
 import {
-  IS_ANDROID, IS_ELECTRON, IS_IOS, IS_SAFARI, IS_TRANSLATION_SUPPORTED, MASK_IMAGE_DISABLED,
+  IS_ANDROID,
+  IS_ELECTRON,
+  IS_IOS,
+  IS_SAFARI,
+  IS_TRANSLATION_SUPPORTED,
+  MASK_IMAGE_DISABLED,
 } from '../../util/windowEnvironment';
 import calculateMiddleFooterTransforms from './helpers/calculateMiddleFooterTransforms';
 
@@ -86,6 +87,7 @@ import SeenByModal from '../common/SeenByModal.async';
 import UnpinAllMessagesModal from '../common/UnpinAllMessagesModal.async';
 import Button from '../ui/Button';
 import Transition from '../ui/Transition';
+import AnimatedBackground from './AnimatedBackground';
 import ChatLanguageModal from './ChatLanguageModal.async';
 import { DropAreaState } from './composer/DropArea';
 import EmojiInteractionAnimation from './EmojiInteractionAnimation.async';
@@ -123,9 +125,12 @@ type StateProps = {
   customBackground?: string;
   backgroundColor?: string;
   patternColor?: string;
+  backgroundAnimationTrigger?: number;
   isLeftColumnShown?: boolean;
   isRightColumnShown?: boolean;
   isBackgroundBlurred?: boolean;
+  backgroundPattern?: boolean;
+  backgroundColors?: string[];
   leftColumnWidth?: number;
   hasActiveMiddleSearch?: boolean;
   isSelectModeActive?: boolean;
@@ -183,9 +188,12 @@ function MiddleColumn({
   theme,
   backgroundColor,
   patternColor,
+  backgroundAnimationTrigger,
   isLeftColumnShown,
   isRightColumnShown,
   isBackgroundBlurred,
+  backgroundPattern,
+  backgroundColors,
   leftColumnWidth,
   hasActiveMiddleSearch,
   isSelectModeActive,
@@ -421,12 +429,15 @@ function MiddleColumn({
     MASK_IMAGE_DISABLED ? 'mask-image-disabled' : 'mask-image-enabled',
   );
 
+  const backgroundAnimation = backgroundPattern && (backgroundColors?.length || 0) >= 3;
   const bgClassName = buildClassName(
     styles.background,
     styles.withTransition,
     customBackground && styles.customBgImage,
     backgroundColor && styles.customBgColor,
-    customBackground && isBackgroundBlurred && styles.blurred,
+    backgroundAnimation && styles.animatedBackground,
+    backgroundPattern && styles.pattern,
+    customBackground && !backgroundAnimation && isBackgroundBlurred && styles.blurred,
     isRightColumnShown && styles.withRightColumn,
     IS_ELECTRON && !(renderingChatId && renderingThreadId) && styles.draggable,
   );
@@ -489,7 +500,8 @@ function MiddleColumn({
         `--composer-translate-x: ${composerTranslateX}px`,
         `--toolbar-translate-x: ${toolbarTranslateX}px`,
         `--pattern-color: ${patternColor}`,
-        backgroundColor && `--theme-background-color: ${backgroundColor}`,
+        (backgroundColor && !backgroundAnimation) && `--theme-background-color: ${backgroundColor}`,
+        (backgroundAnimation) && '--theme-background-color: white',
       )}
       onClick={(isTablet && isLeftColumnShown) ? handleTabletFocus : undefined}
     >
@@ -504,7 +516,14 @@ function MiddleColumn({
       <div
         className={bgClassName}
         style={customBackgroundValue ? `--custom-background: ${customBackgroundValue}` : undefined}
-      />
+      >
+        {backgroundAnimation && (
+          <AnimatedBackground
+            trigger={backgroundAnimationTrigger}
+            colors={backgroundColors || []}
+          />
+        )}
+      </div>
       <div id="middle-column-portals" />
       {Boolean(renderingChatId && renderingThreadId) && (
         <>
@@ -717,7 +736,12 @@ export default memo(withGlobal<OwnProps>(
   (global, { isMobile }): StateProps => {
     const theme = selectTheme(global);
     const {
-      isBlurred: isBackgroundBlurred, background: customBackground, backgroundColor, patternColor,
+      isBlurred: isBackgroundBlurred,
+      background: customBackground,
+      backgroundColor,
+      patternColor,
+      pattern: backgroundPattern,
+      backgroundColors,
     } = global.settings.themes[theme] || {};
 
     const {
@@ -726,7 +750,11 @@ export default memo(withGlobal<OwnProps>(
       chatLanguageModal, privacySettingsNoticeModal,
     } = selectTabState(global);
     const currentMessageList = selectCurrentMessageList(global);
-    const { leftColumnWidth } = global;
+    const { leftColumnWidth, backgroundAnimationTrigger } = global;
+
+    const {
+      messageSendingAnimations,
+    } = global.settings.performance;
 
     const state: StateProps = {
       theme,
@@ -736,6 +764,9 @@ export default memo(withGlobal<OwnProps>(
       isLeftColumnShown,
       isRightColumnShown: selectIsRightColumnShown(global, isMobile),
       isBackgroundBlurred,
+      backgroundAnimationTrigger: messageSendingAnimations ? backgroundAnimationTrigger : 0,
+      backgroundPattern,
+      backgroundColors,
       hasActiveMiddleSearch: Boolean(selectCurrentMiddleSearch(global)),
       isSelectModeActive: selectIsInSelectMode(global),
       isSeenByModalOpen: Boolean(seenByModal),

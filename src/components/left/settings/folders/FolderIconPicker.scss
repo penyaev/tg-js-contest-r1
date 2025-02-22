@@ -1,0 +1,14 @@
+.FolderIconPicker--container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  --gap: 2px;
+  --icons-per-row: 6;
+  --icon-size: 2.75rem; // button.smaller size
+  --padding: 8px;
+
+  padding: 0 var(--padding);
+  gap: var(--gap);
+  width: calc(var(--icon-size) * var(--icons-per-row) + 2 * var(--padding) + (var(--icons-per-row) - 1) * var(--gap));
+}

@@ -161,6 +161,8 @@ const SettingsGeneralBackground: FC<OwnProps & StateProps> = ({
         background: undefined,
         backgroundColor: color,
         patternColor,
+        pattern: false,
+        backgroundColors: undefined,
       });
     }
     isFirstRunRef.current = false;

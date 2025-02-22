@@ -65,6 +65,13 @@ export interface ApiAttachment {
 export interface ApiWallpaper {
   slug: string;
   document: ApiDocument;
+  pattern?: boolean;
+  settings?: {
+    backgroundColor?: number;
+    secondBackgroundColor?: number;
+    thirdBackgroundColor?: number;
+    fourthBackgroundColor?: number;
+  };
 }
 
 export interface ApiSession {
