@@ -2,6 +2,8 @@
 
 author: Ilya Penyaev (t.me/penyaev)
 
+PR: https://github.com/penyaev/tg-js-contest-r1/pull/1/files
+
 All code was written by myself, no external frameworks/libraries used. It does not affect Web A's performance or stability. When possible, I tried to stick to existing app architecture and coding standards in Web A's current codebase and not introduce any radically new approaches or practices. Occasionally I stumbled upon various bugs/issues in the app that I tried to fix along the way even though they were not related to the challenge.
 
 Below is a brief overview of changes made to the app:
@@ -33,9 +35,9 @@ new paragraph starts after a blank line
 
 **nested ~~formatting __is not__ a~~ ||problem||**
 
-</pre>
-
 ```This is an `autolink`: <https://telegram.org>```
+
+</pre>
 
 ## 2. Quote editing
 
