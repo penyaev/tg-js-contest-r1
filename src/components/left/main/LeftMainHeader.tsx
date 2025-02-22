@@ -78,6 +78,7 @@ type StateProps =
     hasPasscode?: boolean;
     canSetPasscode?: boolean;
     foldersLayout: ISettings['foldersLayout'];
+    orderedFolderIds?: number[];
   }
   & Pick<GlobalState, 'connectionState' | 'isSyncing' | 'isFetchingDifference'>;
 
@@ -110,6 +111,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   onSelectArchived,
   onReset,
   foldersLayout,
+  orderedFolderIds,
 }) => {
   const {
     setGlobalSearchDate,
@@ -283,7 +285,8 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
     );
 
     const foldersLeftAllowed = windowWidth > MIN_SCREEN_WIDTH_FOR_STATIC_LEFT_COLUMN;
-    if (foldersLayout === 'left' && foldersLeftAllowed) {
+    const shouldRenderFolders = orderedFolderIds && orderedFolderIds.length > 1;
+    if (foldersLayout === 'left' && foldersLeftAllowed && shouldRenderFolders) {
       menu = (
         <Portal className="ChatFoldersSidebar-menu-container" containerSelector="#ChatFoldersSidebar-menu-wrapper">
           {menu}
@@ -375,6 +378,9 @@ export default memo(withGlobal<OwnProps>(
       query: searchQuery, fetchingStatus, chatId, minDate,
     } = tabState.globalSearch;
     const {
+      chatFolders: {
+        orderedIds: orderedFolderIds,
+      },
       connectionState, isSyncing, isFetchingDifference,
     } = global;
     const { isConnectionStatusMinimized, foldersLayout } = global.settings.byKey;
@@ -395,6 +401,7 @@ export default memo(withGlobal<OwnProps>(
       hasPasscode: Boolean(global.passcode.hasPasscode),
       canSetPasscode: selectCanSetPasscode(global),
       foldersLayout,
+      orderedFolderIds,
     };
   },
 )(LeftMainHeader));
