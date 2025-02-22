@@ -110,7 +110,7 @@ export class TelegramRenderer implements Renderer {
       }
       case NodeType.PARAGRAPH: {
         const tn = node;
-        return `${tn.children.map((n) => this.renderNode(n)).join('')}\n`;
+        return `${tn.children.map((n) => this.renderNode(n)).join('')}\n\n`;
       }
       case NodeType.BLOCK_QUOTE: {
         const tn = node;

@@ -1,5 +1,5 @@
 import {
-  isCR, isLF, isSpace, isTab, isUnicodePunctuation,
+  isCR, isLF, isSpace, isTab, isUnicodePunctuation, isUnicodeWhitespace,
 } from './chars';
 
 type LineState = {
@@ -150,12 +150,12 @@ export class Line {
 
   public leftFlanking(): boolean {
     const next = this.peekBack();
-    return next === '' || isTab(next) || isSpace(next) || isUnicodePunctuation(next) || isCR(next) || isLF(next);
+    return next === '' || isTab(next) || isUnicodeWhitespace(next) || isUnicodePunctuation(next) || isCR(next) || isLF(next);
   }
 
   public rightFlanking(): boolean {
     const next = this.peek();
-    return next === '' || isTab(next) || isSpace(next) || isUnicodePunctuation(next) || isCR(next) || isLF(next);
+    return next === '' || isTab(next) || isUnicodeWhitespace(next) || isUnicodePunctuation(next) || isCR(next) || isLF(next);
   }
 
   public consumeAll(): string {
