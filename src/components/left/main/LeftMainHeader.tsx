@@ -309,6 +309,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
     shouldHideSearch,
     versionString,
     windowWidth,
+    orderedFolderIds,
   ]);
 
   return (
